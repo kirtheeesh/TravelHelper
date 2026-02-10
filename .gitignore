@@ -8,6 +8,5 @@ vite.config.ts.*
 .zencoder
 attached_assets
 .zenflow
-.env
-.env.*
-.replit
+env
+replit
