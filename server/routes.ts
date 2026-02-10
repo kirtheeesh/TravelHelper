@@ -21,15 +21,15 @@ export async function registerRoutes(
 
   // Handle different import patterns for connect-mongo
   let MongoStore: any;
-  if (typeof connectMongo === 'function') {
-    MongoStore = connectMongo;
-  } else if ((connectMongo as any).default && typeof (connectMongo as any).default.create === 'function') {
-    MongoStore = (connectMongo as any).default;
-  } else if (typeof (connectMongo as any).create === 'function') {
+  const cm = connectMongo as any;
+  if (cm.default && typeof cm.default.create === 'function') {
+    MongoStore = cm.default;
+  } else if (typeof cm.create === 'function') {
+    MongoStore = cm;
+  } else if (typeof connectMongo === 'function') {
     MongoStore = connectMongo;
   } else {
-    // Fallback if none of the above match
-    MongoStore = connectMongo;
+    MongoStore = cm;
   }
 
   // Session middleware
