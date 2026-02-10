@@ -22,12 +22,19 @@ export function setupAuth(app: Express) {
   });
 
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    const callbackURL = process.env.NODE_ENV === "production"
+      ? (process.env.AUTH_REDIRECT_URL && process.env.AUTH_REDIRECT_URL.startsWith('http') 
+          ? process.env.AUTH_REDIRECT_URL 
+          : `https://travelhelper-iq3t.onrender.com/api/auth/google/callback`)
+      : (process.env.AUTH_REDIRECT_URL || "http://localhost:5000/api/auth/google/callback");
+
     passport.use(
       new GoogleStrategy(
         {
           clientID: process.env.GOOGLE_CLIENT_ID,
           clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-          callbackURL: process.env.AUTH_REDIRECT_URL || "/api/auth/google/callback",
+          callbackURL,
+          proxy: true,
         },
         async (_accessToken, _refreshToken, profile, done) => {
           try {
