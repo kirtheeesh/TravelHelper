@@ -8,11 +8,12 @@ import { Link } from "wouter";
 
 export default function Dashboard() {
   const { data: trips, isLoading } = useTrips();
+  const visibleTrips = trips?.filter(t => !t.isHidden);
 
   const stats = [
-    { label: "Total Trips", value: trips?.length || 0, color: "text-indigo-400" },
-    { label: "Active", value: trips?.filter(t => t.status === "active").length || 0, color: "text-green-400" },
-    { label: "Planned", value: trips?.filter(t => t.status === "planned").length || 0, color: "text-amber-400" },
+    { label: "Total Trips", value: visibleTrips?.length || 0, color: "text-indigo-400" },
+    { label: "Active", value: visibleTrips?.filter(t => t.status === "active").length || 0, color: "text-green-400" },
+    { label: "Planned", value: visibleTrips?.filter(t => t.status === "planned").length || 0, color: "text-amber-400" },
     { label: "Countries", value: 3, color: "text-pink-400" }, // Mock data for now
   ];
 
@@ -50,7 +51,7 @@ export default function Dashboard() {
             <div className="flex justify-center p-12">
               <Loader2 className="w-8 h-8 text-white animate-spin" />
             </div>
-          ) : trips?.length === 0 ? (
+          ) : visibleTrips?.length === 0 ? (
             <GlassCard className="p-12 text-center flex flex-col items-center">
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
                 <Plus className="w-8 h-8 text-white/50" />
@@ -67,7 +68,7 @@ export default function Dashboard() {
             </GlassCard>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {trips?.map((trip, idx) => (
+              {visibleTrips?.map((trip, idx) => (
                 <motion.div
                   key={trip.id}
                   initial={{ opacity: 0, y: 20 }}

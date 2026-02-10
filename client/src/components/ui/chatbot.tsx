@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { GlassCard } from "./glass-card";
 import { ScrollArea } from "./scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
-import { useTrips } from "@/hooks/use-trips";
+import { useTrips, useUpdateTrip } from "@/hooks/use-trips";
 
 interface Message {
   id: string;
@@ -37,18 +37,20 @@ export function Chatbot() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [input, setInput] = useState("");
   const { data: trips } = useTrips();
+  const updateTrip = useUpdateTrip();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       type: "bot",
-      content: "👋 Hi! I'm your Travel Helper AI. How can I help you today?",
+      content: "👋 Hi! I'm your Kerala Travel Assistant. Looking for a trip to Munnar, Vagamon, or Ooty?",
       buttons: [
-        { label: "📍 Active Trip", action: "map", icon: <MapIcon className="w-4 h-4" /> },
-        { label: "📊 Dashboard", action: "dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
+        { label: "🌴 Kerala Destinations", action: "kerala" },
+        { label: "🌐 Explore All Trips", action: "list trips", icon: <LayoutDashboard className="w-4 h-4" /> },
         { label: "➕ New Trip", action: "new trip", icon: <Plus className="w-4 h-4" /> }
       ]
     }
   ]);
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
@@ -75,24 +77,93 @@ export function Chatbot() {
     const cmd = action.toLowerCase();
     const firstTripId = trips?.[0]?.id;
     
-    if (cmd.includes("dashboard") || cmd.includes("home")) {
+    if (cmd === "main") {
+      setSelectedTripId(null);
+      setMessages([
+        {
+          id: Date.now().toString(),
+          type: "bot",
+          content: "👋 Back to the beginning! I'm your Kerala Travel Assistant. Looking for a trip to Munnar, Vagamon, or Ooty?",
+          buttons: [
+            { label: "🌴 Kerala Destinations", action: "kerala" },
+            { label: "🌐 Explore All Trips", action: "list trips", icon: <LayoutDashboard className="w-4 h-4" /> },
+            { label: "➕ New Trip", action: "new trip", icon: <Plus className="w-4 h-4" /> }
+          ]
+        }
+      ]);
+      return;
+    }
+
+    if (cmd === "list trips") {
+      if (!trips || trips.length === 0) {
+        addBotMessage("No trips are currently registered in the system. Want to create one?", [
+          { label: "➕ Create Trip", action: "new trip" },
+          { label: "🏠 Main Menu", action: "main" }
+        ]);
+      } else {
+        const tripButtons = trips.map(trip => ({
+          label: `📍 ${trip.name}`,
+          action: `select_trip_${trip.id}`
+        }));
+        addBotMessage("Here are all available registered trips. Select one to proceed:", [
+          ...tripButtons,
+          { label: "🏠 Main Menu", action: "main" }
+        ]);
+      }
+    } else if (cmd.startsWith("select_trip_")) {
+      const tripId = cmd.replace("select_trip_", "");
+      const trip = trips?.find(t => t.id === tripId);
+      if (trip) {
+        setSelectedTripId(tripId);
+        addBotMessage(`Trip selected: **${trip.name}**. What would you like to execute?`, [
+          { label: "🗺️ View Map", action: `trip_map_${tripId}`, icon: <MapIcon className="w-4 h-4" /> },
+          { label: "💰 View Budget", action: `trip_budget_${tripId}`, icon: <Wallet className="w-4 h-4" /> },
+          { label: "👥 View Members", action: `trip_members_${tripId}`, icon: <Users className="w-4 h-4" /> },
+          { label: "🔙 Back to All Trips", action: "list trips" },
+          { label: "🏠 Main Menu", action: "main" }
+        ]);
+      }
+    } else if (cmd.startsWith("trip_map_")) {
+      const tripId = cmd.replace("trip_map_", "");
+      setLocation(`/trip/${tripId}/map`);
+      triggerSuccess();
+      addBotMessage("Opening the interactive map for your trip!", [
+        { label: "🏠 Main Menu", action: "main" }
+      ]);
+    } else if (cmd.startsWith("trip_budget_")) {
+      const tripId = cmd.replace("trip_budget_", "");
+      setLocation(`/trip/${tripId}/budget`);
+      triggerSuccess();
+      addBotMessage("Opening your trip budget and expense tracker.", [
+        { label: "🏠 Main Menu", action: "main" }
+      ]);
+    } else if (cmd.startsWith("trip_members_")) {
+      const tripId = cmd.replace("trip_members_", "");
+      setLocation(`/trip/${tripId}/members`);
+      triggerSuccess();
+      addBotMessage("Opening your travel squad management.", [
+        { label: "🏠 Main Menu", action: "main" }
+      ]);
+    } else if (cmd.includes("dashboard") || cmd.includes("home")) {
       setLocation("/dashboard");
       triggerSuccess();
       addBotMessage("🚀 Your trips at a glance!", [
         { label: "📍 Active Trip", action: "map", icon: <MapIcon className="w-4 h-4" /> },
         { label: "💰 Trip Budget", action: "budget", icon: <Wallet className="w-4 h-4" /> },
         { label: "➕ Plan New Adventure", action: "new trip", icon: <Plus className="w-4 h-4" /> },
-        { label: "👥 Manage Members", action: "members", icon: <Users className="w-4 h-4" /> }
+        { label: "🏠 Main Menu", action: "main" }
       ]);
     } else if (cmd.includes("map") || cmd.includes("where")) {
       if (firstTripId) {
         setLocation(`/trip/${firstTripId}/map`);
         addBotMessage("📍 2.3km from Waterfalls! ETA Pine Forest: 15 mins", [
-          { label: "Open Full Map", action: "map" }
+          { label: "Open Full Map", action: "map" },
+          { label: "🏠 Main Menu", action: "main" }
         ]);
       } else {
         addBotMessage("You don't have any trips yet! Want to create one?", [
-          { label: "➕ Create Trip", action: "new trip" }
+          { label: "➕ Create Trip", action: "new trip" },
+          { label: "🏠 Main Menu", action: "main" }
         ]);
       }
     } else if (cmd.includes("new trip") || cmd.includes("plan munnar")) {
@@ -100,7 +171,8 @@ export function Chatbot() {
       addBotMessage("✨ Trip creator activated! What's the vibe? Adventure / Relax / Family?", [
         { label: "🏔️ Adventure", action: "adventure", icon: <Mountain className="w-4 h-4" /> },
         { label: "🏖️ Relax", action: "relax", icon: <Palmtree className="w-4 h-4" /> },
-        { label: "👨‍👩‍👧 Family", action: "family", icon: <Users2 className="w-4 h-4" /> }
+        { label: "👨‍👩‍👧 Family", action: "family", icon: <Users2 className="w-4 h-4" /> },
+        { label: "🏠 Main Menu", action: "main" }
       ]);
     } else if (cmd.includes("budget") || cmd.includes("spent")) {
       if (firstTripId) {
@@ -108,33 +180,77 @@ export function Chatbot() {
         addBotMessage("💸 Trip Budget: View your spending and split costs here.", [
           { label: "📊 Pie Chart", action: "budget" },
           { label: "➕ Add Spending", action: "budget" },
-          { label: "✂️ Split", action: "budget" }
+          { label: "🏠 Main Menu", action: "main" }
         ]);
       } else {
-        addBotMessage("No trips found. Plan one to track your budget!");
+        addBotMessage("No trips found. Plan one to track your budget!", [
+          { label: "🏠 Main Menu", action: "main" }
+        ]);
       }
     } else if (cmd.includes("members") || cmd.includes("team")) {
       if (firstTripId) {
         setLocation(`/trip/${firstTripId}/members`);
         addBotMessage("👥 Managing your travel squad.", [
           { label: "Invite Friend", action: "members" },
-          { label: "Permissions", action: "members" }
+          { label: "🏠 Main Menu", action: "main" }
         ]);
       } else {
-        addBotMessage("Create a trip first to manage members!");
+        addBotMessage("Create a trip first to manage members!", [
+          { label: "🏠 Main Menu", action: "main" }
+        ]);
       }
-    } else if (cmd.includes("vagamon")) {
-      addBotMessage("🎒 Found 3 PERFECT Vagamon adventures!", [
-        { label: "✨ Hill Station (4 friends, ₹15k)", action: "hill station" },
-        { label: "✨ Adventure Camp (6 members)", action: "adventure" },
-        { label: "✨ Family Escape (2 people)", action: "family" },
-        { label: "✨ Create My Own", action: "new trip" }
+    } else if (cmd.includes("kerala") || cmd.includes("munnar") || cmd.includes("vagamon") || cmd.includes("ooty")) {
+      addBotMessage("🌴 Explore the best of Kerala & Tamil Nadu! Pick your destination:", [
+        { label: "🏔️ Munnar", action: "plan munnar" },
+        { label: "🌲 Vagamon", action: "plan vagamon" },
+        { label: "🌹 Ooty", action: "plan ooty" },
+        { label: "🛶 Alleppey", action: "plan alleppey" },
+        { label: "🏠 Main Menu", action: "main" }
       ]);
-    } else if (cmd.includes("adventure") || cmd.includes("relax") || cmd.includes("family")) {
-      addBotMessage(`Awesome! ${cmd.charAt(0).toUpperCase() + cmd.slice(1)} trip vibes selected. Let's start planning!`);
-      setLocation("/trip/new");
+    } else if (cmd.includes("plan munnar")) {
+      const trip = trips?.find(t => t.destination.includes("Munnar"));
+      if (trip) {
+        updateTrip.mutate({ id: trip.id!, isHidden: false });
+        triggerSuccess();
+        addBotMessage(`🏔️ **${trip.name}** has been added to your dashboard!`, [
+          { label: "🗺️ View Map", action: `trip_map_${trip.id}`, icon: <MapIcon className="w-4 h-4" /> },
+          { label: "🏠 Main Menu", action: "main" }
+        ]);
+      } else {
+        addBotMessage("I couldn't find the Munnar trip template. Want to create a new one?", [
+          { label: "➕ New Trip", action: "new trip" },
+          { label: "🏠 Main Menu", action: "main" }
+        ]);
+      }
+    } else if (cmd.includes("plan vagamon")) {
+      const trip = trips?.find(t => t.destination.includes("Vagamon"));
+      if (trip) {
+        updateTrip.mutate({ id: trip.id!, isHidden: false });
+        triggerSuccess();
+        addBotMessage(`🌲 **${trip.name}** has been added to your dashboard!`, [
+          { label: "🗺️ View Map", action: `trip_map_${trip.id}`, icon: <MapIcon className="w-4 h-4" /> },
+          { label: "🏠 Main Menu", action: "main" }
+        ]);
+      } else {
+        addBotMessage("I couldn't find the Vagamon trip template. Want to create a new one?", [
+          { label: "➕ New Trip", action: "new trip" },
+          { label: "🏠 Main Menu", action: "main" }
+        ]);
+      }
+    } else if (cmd.includes("plan ooty")) {
+      const trip = trips?.find(t => t.destination.includes("Ooty"));
+      if (trip) {
+        updateTrip.mutate({ id: trip.id!, isHidden: false });
+        triggerSuccess();
+        addBotMessage(`🌹 **${trip.name}** has been added to your dashboard!`, [
+          { label: "🗺️ View Map", action: `trip_map_${trip.id}`, icon: <MapIcon className="w-4 h-4" /> },
+          { label: "🏠 Main Menu", action: "main" }
+        ]);
+      }
     } else {
-      addBotMessage("I'm your Navigation Heart! Try commands like 'dashboard', 'plan munnar trip', 'where are we?', or 'budget update'.");
+      addBotMessage("I'm your Navigation Heart! Try 'dashboard', 'plan munnar', or 'map'. Type 'main' to reset.", [
+        { label: "🏠 Main Menu", action: "main" }
+      ]);
     }
   };
 

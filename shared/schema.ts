@@ -26,6 +26,7 @@ export const tripSchema = z.object({
   budgetSpent: z.number().default(0),
   status: z.enum(["planned", "active", "completed"]).default("planned"),
   memberCount: z.number().default(1),
+  isHidden: z.boolean().default(false),
 });
 
 export const placeSchema = z.object({

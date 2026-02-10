@@ -63,7 +63,7 @@ export function TripCard({ trip }: { trip: Trip }) {
                 <Wallet className="w-3 h-3" /> Budget
               </span>
               <span className="text-sm font-semibold">
-                ${budgetSpent.toLocaleString()} <span className="text-white/40">/ ${budgetTotal.toLocaleString()}</span>
+                ₹{budgetSpent.toLocaleString('en-IN')} <span className="text-white/40">/ ₹{budgetTotal.toLocaleString('en-IN')}</span>
               </span>
             </div>
             <Progress value={progress} className="h-1.5 bg-white/10" indicatorClassName="bg-gradient-to-r from-indigo-500 to-purple-500" />

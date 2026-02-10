@@ -6,9 +6,21 @@ if (!MONGODB_URI) {
   throw new Error("MONGODB_URI must be set in environment variables");
 }
 
+console.log("Connecting to MongoDB...");
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log("Connected to MongoDB Atlas"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .then(() => console.log("SUCCESS: Connected to MongoDB Atlas"))
+  .catch((err) => {
+    console.error("CRITICAL: MongoDB connection error:", err);
+    process.exit(1); // Exit if DB connection fails
+  });
+
+mongoose.connection.on('error', err => {
+  console.error("RUNTIME: MongoDB error:", err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn("WARNING: MongoDB disconnected");
+});
 
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
@@ -32,6 +44,7 @@ const tripSchema = new mongoose.Schema({
   budgetSpent: { type: Number, default: 0 },
   status: { type: String, enum: ["planned", "active", "completed"], default: "planned" },
   memberCount: { type: Number, default: 1 },
+  isHidden: { type: Boolean, default: false },
 });
 
 const placeSchema = new mongoose.Schema({

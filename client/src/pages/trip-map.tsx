@@ -16,6 +16,7 @@ export default function TripMap() {
   const { data: trip, isLoading } = useTrip(tripId);
   const { mutate: addPlace, isPending } = useCreatePlace();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
 
   // Form state
   const [name, setName] = useState("");
@@ -23,25 +24,31 @@ export default function TripMap() {
 
   if (isLoading || !trip) return null;
 
+  const handleLocationSelect = (lat: number, lng: number) => {
+    setSelectedLocation({ lat, lng });
+    setIsDialogOpen(true);
+  };
+
   const handleAddPlace = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate random location near trip center (Paris default in MapView)
-    // In a real app, you'd pick this from the map click or search
-    const baseLat = 48.8566;
-    const baseLng = 2.3522;
-    const randomOffset = () => (Math.random() - 0.5) * 0.05;
+    
+    if (!selectedLocation) return;
 
     addPlace({
       tripId,
       name,
       type,
-      lat: baseLat + randomOffset(),
-      lng: baseLng + randomOffset(),
+      lat: selectedLocation.lat,
+      lng: selectedLocation.lng,
       order: trip.places.length,
       description: "Added from map view",
       eta: "TBD",
     }, {
-      onSuccess: () => setIsDialogOpen(false)
+      onSuccess: () => {
+        setIsDialogOpen(false);
+        setName("");
+        setSelectedLocation(null);
+      }
     });
   };
 
@@ -50,9 +57,16 @@ export default function TripMap() {
       <div className="h-full min-h-[600px] flex flex-col lg:flex-row gap-6">
         {/* Left: Map */}
         <div className="flex-1 rounded-2xl overflow-hidden relative min-h-[400px]">
-          <MapView places={trip.places} />
+          <MapView 
+            places={trip.places} 
+            onLocationSelect={handleLocationSelect}
+          />
           
           <div className="absolute bottom-6 right-6 z-[400]">
+            <p className="bg-slate-900/80 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm border border-white/10 mb-2">
+              <MapPin className="w-4 h-4 inline-block mr-2 text-indigo-400" />
+              Click map to pick location
+            </p>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="h-14 w-14 rounded-full bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-600/40">

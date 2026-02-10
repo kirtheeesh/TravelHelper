@@ -5,6 +5,9 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import session from "express-session";
 import MongoStore from "connect-mongo";
+import { setupAuth } from "./auth";
+import passport from "passport";
+import { log } from "./log";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -31,52 +34,164 @@ export async function registerRoutes(
     }
   }));
 
+  setupAuth(app);
+
   // === SEED DATA ===
-  const existingUser = await storage.getUserByUsername("admin");
-  if (!existingUser) {
-    const admin = await storage.createUser({
-      username: "admin",
-      password: "admin123", // In a real app, hash this!
-      name: "Admin Traveler",
-      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
-      isOnline: true,
-      lat: 48.8566,
-      lng: 2.3522
-    });
+  try {
+    log("checking seed data...");
+    const checkStart = Date.now();
+    const existingUser = await storage.getUserByUsername("admin");
+    log(`seed check took ${Date.now() - checkStart}ms`);
+    
+    if (!existingUser) {
+      log("seeding initial data...");
+      const seedStart = Date.now();
+      const admin = await storage.createUser({
+        username: "admin",
+        password: "admin123",
+        name: "Kerala Guide",
+        avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
+        isOnline: true,
+        lat: 10.0889,
+        lng: 77.0595
+      });
 
-    // Create a sample trip
-    const trip = await storage.createTrip({
-      name: "Paris Summer 2024",
-      destination: "Paris, France",
-      image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&h=600&fit=crop",
-      startDate: new Date("2024-06-15"),
-      endDate: new Date("2024-06-25"),
-      budgetTotal: 5000,
-      status: "planned",
-    });
+      const seedTrips = [
+        {
+          trip: {
+            name: "Munnar Tea Gardens",
+            destination: "Munnar, Kerala",
+            image: "https://images.unsplash.com/photo-1593181629936-11c609b8db9b?w=800&h=600&fit=crop",
+            startDate: new Date("2024-08-10"),
+            endDate: new Date("2024-08-15"),
+            budgetTotal: 15000,
+            status: "planned",
+            isHidden: true,
+          },
+          places: [
+            {
+              name: "Eravikulam National Park",
+              lat: 10.2000,
+              lng: 77.0833,
+              image: "https://images.unsplash.com/photo-1626014303757-636611633391?w=400&h=300&fit=crop",
+              order: 0,
+              type: "nature",
+              description: "Home of the Nilgiri Tahr"
+            }
+          ]
+        },
+        {
+          trip: {
+            name: "Vagamon Meadows",
+            destination: "Vagamon, Kerala",
+            image: "https://images.unsplash.com/photo-1620766182966-c6eb5ed2b788?w=800&h=600&fit=crop",
+            startDate: new Date("2024-09-05"),
+            endDate: new Date("2024-09-08"),
+            budgetTotal: 12000,
+            status: "planned",
+            isHidden: true,
+          },
+          places: [
+            {
+              name: "Pine Forest",
+              lat: 9.6891,
+              lng: 76.9034,
+              image: "https://images.unsplash.com/photo-1548625361-1250267d3372?w=400&h=300&fit=crop",
+              order: 0,
+              type: "nature",
+              description: "Man-made pine forest"
+            }
+          ]
+        },
+        {
+          trip: {
+            name: "Ooty Queen of Hills",
+            destination: "Ooty, Tamil Nadu",
+            image: "https://images.unsplash.com/photo-1583067339460-e4b524785ca8?w=800&h=600&fit=crop",
+            startDate: new Date("2024-10-12"),
+            endDate: new Date("2024-10-16"),
+            budgetTotal: 18000,
+            status: "planned",
+            isHidden: false,
+          },
+          places: [
+            {
+              name: "Ooty Botanical Garden",
+              lat: 11.4173,
+              lng: 76.7111,
+              image: "https://images.unsplash.com/photo-1598502390636-6e119468923a?w=400&h=300&fit=crop",
+              order: 0,
+              type: "garden",
+              description: "Historic botanical gardens"
+            }
+          ]
+        },
+        {
+          trip: {
+            name: "Alleppey Backwaters",
+            destination: "Alleppey, Kerala",
+            image: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&h=600&fit=crop",
+            startDate: new Date("2024-11-20"),
+            endDate: new Date("2024-11-23"),
+            budgetTotal: 25000,
+            status: "planned",
+            isHidden: false,
+          },
+          places: []
+        },
+        {
+          trip: {
+            name: "Wayanad Wildlife Sanctuary",
+            destination: "Wayanad, Kerala",
+            image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&h=600&fit=crop",
+            startDate: new Date("2024-12-05"),
+            endDate: new Date("2024-12-10"),
+            budgetTotal: 20000,
+            status: "planned",
+            isHidden: false,
+          },
+          places: []
+        },
+        {
+          trip: {
+            name: "Capital Culture Tour",
+            destination: "Thiruvananthapuram, Kerala",
+            image: "https://images.unsplash.com/photo-1593181629936-11c609b8db9b?w=800&h=600&fit=crop",
+            startDate: new Date("2025-01-15"),
+            endDate: new Date("2025-01-20"),
+            budgetTotal: 30000,
+            status: "planned",
+            isHidden: false,
+          },
+          places: [
+            {
+              name: "Padmanabhaswamy Temple",
+              lat: 8.4830,
+              lng: 76.9435,
+              image: "https://images.unsplash.com/photo-1626014303757-636611633391?w=400&h=300&fit=crop",
+              order: 0,
+              type: "culture",
+              description: "Wealthiest temple in the world"
+            }
+          ]
+        }
+      ];
 
-    // Add places
-    await storage.createPlace({
-      tripId: trip.id as string,
-      name: "Eiffel Tower",
-      lat: 48.8584,
-      lng: 2.2945,
-      image: "https://images.unsplash.com/photo-1511739001486-6bfe10ce7859?w=400&h=300&fit=crop",
-      order: 0,
-      type: "attraction",
-      description: "Iconic iron lady of Paris"
-    });
+      await Promise.all(seedTrips.map(async (seed) => {
+        const trip = await storage.createTrip(seed.trip as any);
+        if (seed.places.length > 0) {
+          await Promise.all(seed.places.map(place => 
+            storage.createPlace({ ...place, tripId: trip.id as string })
+          ));
+        }
+      }));
 
-    await storage.createPlace({
-      tripId: trip.id as string,
-      name: "Louvre Museum",
-      lat: 48.8606,
-      lng: 2.3376,
-      image: "https://images.unsplash.com/photo-1499856871940-a09627c6d7db?w=400&h=300&fit=crop",
-      order: 1,
-      type: "attraction",
-      description: "World's largest art museum"
-    });
+      log(`seeding complete in ${Date.now() - seedStart}ms.`);
+    } else {
+      log("seed data already exists.");
+    }
+  } catch (err) {
+    console.error("ERROR: Seeding failed:", err);
   }
 
   // === AUTH ROUTES ===
@@ -98,6 +213,40 @@ export async function registerRoutes(
       res.json({ message: "Logged out" });
     });
   });
+
+  // Google Auth Routes
+  app.get("/api/auth/google", (req, _res, next) => {
+    console.log("Initiating Google Authentication...");
+    next();
+  }, passport.authenticate("google", { scope: ["profile", "email"] }));
+
+  app.get(
+    "/api/auth/google/callback",
+    (req, res, next) => {
+      console.log("Received Google Authentication callback...");
+      passport.authenticate("google", (err: any, user: any, info: any) => {
+        if (err) {
+          console.error("Google Auth Error:", err);
+          return res.status(500).json({ message: "Authentication failed", error: err.message });
+        }
+        if (!user) {
+          console.warn("Google Auth failed: User not found", info);
+          return res.redirect("/login");
+        }
+        req.logIn(user, (err) => {
+          if (err) {
+            console.error("Session login error:", err);
+            return res.status(500).json({ message: "Login failed", error: err.message });
+          }
+          
+          // Set session userId for consistency with existing auth
+          (req.session as any).userId = user.id;
+          console.log(`Successfully authenticated user: ${user.name} (${user.id})`);
+          res.redirect("/dashboard");
+        });
+      })(req, res, next);
+    }
+  );
 
   app.get(api.auth.me.path, async (req, res) => {
     const userId = (req.session as any).userId;
@@ -121,6 +270,106 @@ export async function registerRoutes(
     next();
   };
 
+  app.get("/api/seed", async (req, res) => {
+    // Clear existing data (optional, but good for fresh start)
+    // await storage.clearAll(); 
+    
+    // Create Munnar Trip
+    const munnar = await storage.createTrip({
+      name: "Munnar Tea Gardens",
+      destination: "Munnar, Kerala",
+      image: "https://images.unsplash.com/photo-1593181629936-11c609b8db9b?w=800&h=600&fit=crop",
+      startDate: new Date("2024-08-10"),
+      endDate: new Date("2024-08-15"),
+      budgetTotal: 15000,
+      status: "planned",
+      isHidden: true,
+    });
+
+    await storage.createPlace({
+      tripId: munnar.id as string,
+      name: "Eravikulam National Park",
+      lat: 10.2000,
+      lng: 77.0833,
+      image: "https://images.unsplash.com/photo-1626014303757-636611633391?w=400&h=300&fit=crop",
+      order: 0,
+      type: "nature",
+      description: "Home of the Nilgiri Tahr"
+    });
+
+    // Vagamon Trip
+    const vagamon = await storage.createTrip({
+      name: "Vagamon Meadows",
+      destination: "Vagamon, Kerala",
+      image: "https://images.unsplash.com/photo-1620766182966-c6eb5ed2b788?w=800&h=600&fit=crop",
+      startDate: new Date("2024-09-05"),
+      endDate: new Date("2024-09-08"),
+      budgetTotal: 12000,
+      status: "planned",
+      isHidden: true,
+    });
+
+    await storage.createPlace({
+      tripId: vagamon.id as string,
+      name: "Pine Forest",
+      lat: 9.6891,
+      lng: 76.9034,
+      image: "https://images.unsplash.com/photo-1548625361-1250267d3372?w=400&h=300&fit=crop",
+      order: 0,
+      type: "nature",
+      description: "Man-made pine forest"
+    });
+
+    // Ooty Trip
+    const ooty = await storage.createTrip({
+      name: "Ooty Queen of Hills",
+      destination: "Ooty, Tamil Nadu",
+      image: "https://images.unsplash.com/photo-1583067339460-e4b524785ca8?w=800&h=600&fit=crop",
+      startDate: new Date("2024-10-12"),
+      endDate: new Date("2024-10-16"),
+      budgetTotal: 18000,
+      status: "planned",
+      isHidden: false,
+    });
+
+    await storage.createPlace({
+      tripId: ooty.id as string,
+      name: "Ooty Botanical Garden",
+      lat: 11.4173,
+      lng: 76.7111,
+      image: "https://images.unsplash.com/photo-1598502390636-6e119468923a?w=400&h=300&fit=crop",
+      order: 0,
+      type: "garden",
+      description: "Historic botanical gardens"
+    });
+
+    // Alleppey Trip
+    await storage.createTrip({
+      name: "Alleppey Backwaters",
+      destination: "Alleppey, Kerala",
+      image: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&h=600&fit=crop",
+      startDate: new Date("2024-11-20"),
+      endDate: new Date("2024-11-23"),
+      budgetTotal: 25000,
+      status: "planned",
+      isHidden: false,
+    });
+
+    // Wayanad Trip
+    await storage.createTrip({
+      name: "Wayanad Wildlife Sanctuary",
+      destination: "Wayanad, Kerala",
+      image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&h=600&fit=crop",
+      startDate: new Date("2024-12-05"),
+      endDate: new Date("2024-12-10"),
+      budgetTotal: 20000,
+      status: "planned",
+      isHidden: false,
+    });
+
+    res.json({ message: "Database seeded with Kerala tourist data!" });
+  });
+
   app.get(api.trips.list.path, requireAuth, async (req, res) => {
     const trips = await storage.getTrips();
     res.json(trips);
@@ -140,6 +389,17 @@ export async function registerRoutes(
     const input = api.trips.create.input.parse(req.body);
     const trip = await storage.createTrip(input);
     res.status(201).json(trip);
+  });
+
+  app.put(api.trips.update.path, requireAuth, async (req, res) => {
+    const id = String(req.params.id);
+    const input = api.trips.update.input.parse(req.body);
+    try {
+      const trip = await storage.updateTrip(id, input);
+      res.json(trip);
+    } catch (err) {
+      res.status(404).json({ message: "Trip not found" });
+    }
   });
 
   app.post(api.places.create.path, requireAuth, async (req, res) => {

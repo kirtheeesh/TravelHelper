@@ -1,7 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
-import { type InsertTrip, type Trip, type TripWithDetails } from "@shared/schema";
+import { type InsertTrip, type Trip, type TripWithDetails, type Place } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+
+export { type Trip, type InsertTrip, type TripWithDetails, type Place };
 import { useLocation } from "wouter";
 
 export function useTrips() {
@@ -56,6 +58,34 @@ export function useCreateTrip() {
         variant: "destructive",
         title: "Error",
         description: "Could not create trip. Please try again.",
+      });
+    },
+  });
+}
+
+export function useUpdateTrip() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Trip> & { id: string }) => {
+      const url = buildUrl(api.trips.update.path, { id });
+      const res = await fetch(url, {
+        method: api.trips.update.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) throw new Error("Failed to update trip");
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.trips.list.path] });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not update trip. Please try again.",
       });
     },
   });

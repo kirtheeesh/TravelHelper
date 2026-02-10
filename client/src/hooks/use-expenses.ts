@@ -21,7 +21,7 @@ export function useCreateExpense() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ tripId, ...data }: InsertExpense & { tripId: string }) => {
+    mutationFn: async ({ tripId, ...data }: Omit<InsertExpense, 'userId'> & { tripId: string }) => {
       const url = buildUrl(api.expenses.create.path, { id: tripId });
       const res = await fetch(url, {
         method: api.expenses.create.method,

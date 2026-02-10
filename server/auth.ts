@@ -31,10 +31,11 @@ export function setupAuth(app: Express) {
         },
         async (_accessToken, _refreshToken, profile, done) => {
           try {
+            console.log(`Verifying Google profile: ${profile.displayName} (${profile.id})`);
             let user = await storage.getUserByGoogleId(profile.id);
 
             if (!user) {
-              // Create new user if they don't exist
+              console.log("Creating new user from Google profile...");
               user = await storage.createUser({
                 username: profile.emails?.[0].value || profile.id,
                 name: profile.displayName,
@@ -43,10 +44,14 @@ export function setupAuth(app: Express) {
                 avatar: profile.photos?.[0].value,
                 isOnline: true,
               });
+              console.log(`User created: ${user.username}`);
+            } else {
+              console.log(`User found: ${user.username}`);
             }
 
             return done(null, user);
           } catch (err) {
+            console.error("Error in Google Strategy verify callback:", err);
             return done(err as Error);
           }
         }
