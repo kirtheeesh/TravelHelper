@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import session from "express-session";
-import MongoStore from "connect-mongo";
+import connectMongo from "connect-mongo";
 import { setupAuth } from "./auth";
 import passport from "passport";
 import { log } from "./log";
@@ -17,6 +17,19 @@ export async function registerRoutes(
 ): Promise<Server> {
   if (!MONGODB_URI) {
     throw new Error("MONGODB_URI must be set in environment variables");
+  }
+
+  // Handle different import patterns for connect-mongo
+  let MongoStore: any;
+  if (typeof connectMongo === 'function') {
+    MongoStore = connectMongo;
+  } else if ((connectMongo as any).default && typeof (connectMongo as any).default.create === 'function') {
+    MongoStore = (connectMongo as any).default;
+  } else if (typeof (connectMongo as any).create === 'function') {
+    MongoStore = connectMongo;
+  } else {
+    // Fallback if none of the above match
+    MongoStore = connectMongo;
   }
 
   // Session middleware
