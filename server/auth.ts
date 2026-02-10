@@ -23,7 +23,7 @@ export function setupAuth(app: Express) {
 
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     const callbackURL = process.env.AUTH_REDIRECT_URL || (process.env.NODE_ENV === "production"
-      ? "https://TravelHelper.onrender.com/api/auth/google/callback"
+      ? "https://travelhelper-iq3t.onrender.com/api/auth/google/callback"
       : "http://127.0.0.1:5000/api/auth/google/callback");
 
     console.log(`Google Auth initialized with callback: ${callbackURL}`);

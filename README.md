@@ -47,7 +47,7 @@ The application will be available at `http://127.0.0.1:5000`.
    - `GOOGLE_CLIENT_ID`: your Google Client ID
    - `GOOGLE_CLIENT_SECRET`: your Google Client Secret
    - `SESSION_SECRET`: a secure random string
-   - `AUTH_REDIRECT_URL`: `https://TravelHelper.onrender.com/api/auth/google/callback`
+   - `AUTH_REDIRECT_URL`: `https://travelhelper-iq3t.onrender.com/api/auth/google/callback`
 
 ## Google OAuth Configuration
 
@@ -56,9 +56,9 @@ Ensure your Google Cloud Console "OAuth 2.0 Client ID" is configured with:
 ### Authorized JavaScript origins
 - `http://localhost:5000`
 - `http://127.0.0.1:5000`
-- `https://TravelHelper.onrender.com`
+- `https://travelhelper-iq3t.onrender.com`
 
 ### Authorized redirect URIs
 - `http://localhost:5000/api/auth/google/callback`
 - `http://127.0.0.1:5000/api/auth/google/callback`
-- `https://TravelHelper.onrender.com/api/auth/google/callback`
+- `https://travelhelper-iq3t.onrender.com/api/auth/google/callback`
