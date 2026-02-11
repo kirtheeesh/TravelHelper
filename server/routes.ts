@@ -60,15 +60,19 @@ export async function registerRoutes(
     if (!existingMunnar) {
       log("seeding initial data...");
       const seedStart = Date.now();
-      const admin = await storage.createUser({
-        username: "admin",
-        password: "admin123",
-        name: "Kerala Guide",
-        avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
-        isOnline: true,
-        lat: 10.0889,
-        lng: 77.0595
-      });
+      
+      let admin = await storage.getUserByUsername("admin");
+      if (!admin) {
+        admin = await storage.createUser({
+          username: "admin",
+          password: "admin123",
+          name: "Kerala Guide",
+          avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
+          isOnline: true,
+          lat: 10.0889,
+          lng: 77.0595
+        });
+      }
 
       const seedTrips = [
         {
