@@ -255,7 +255,15 @@ export async function registerRoutes(
           // Set session userId for consistency with existing auth
           (req.session as any).userId = user.id;
           console.log(`Successfully authenticated user: ${user.name} (${user.id})`);
-          res.redirect("/dashboard");
+          
+          // Save session before redirecting to ensure it's persisted
+          req.session.save((err) => {
+            if (err) {
+              console.error("Session save error:", err);
+              return res.status(500).json({ message: "Session save failed" });
+            }
+            res.redirect("/dashboard");
+          });
         });
       })(req, res, next);
     }

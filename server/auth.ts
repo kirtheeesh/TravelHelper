@@ -22,9 +22,9 @@ export function setupAuth(app: Express) {
   });
 
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-    const callbackURL = process.env.AUTH_REDIRECT_URL || (process.env.NODE_ENV === "production"
+    const callbackURL = process.env.NODE_ENV === "production"
       ? "https://travelhelper-iq3t.onrender.com/api/auth/google/callback"
-      : "http://127.0.0.1:5000/api/auth/google/callback");
+      : (process.env.AUTH_REDIRECT_URL || "http://localhost:5000/api/auth/google/callback");
 
     console.log(`Google Auth initialized with callback: ${callbackURL}`);
     console.log(`Google Client ID (first 15 chars): ${process.env.GOOGLE_CLIENT_ID?.substring(0, 15)}...`);
