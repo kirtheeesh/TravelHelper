@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { User, Trip, Place, Member, Expense } from "./db";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import session from "express-session";
@@ -53,10 +54,10 @@ export async function registerRoutes(
   try {
     log("checking seed data...");
     const checkStart = Date.now();
-    const existingUser = await storage.getUserByUsername("admin");
+    const existingMunnar = await Trip.findOne({ name: "Munnar Tea Gardens" });
     log(`seed check took ${Date.now() - checkStart}ms`);
     
-    if (!existingUser) {
+    if (!existingMunnar) {
       log("seeding initial data...");
       const seedStart = Date.now();
       const admin = await storage.createUser({
@@ -292,9 +293,15 @@ export async function registerRoutes(
   };
 
   app.get("/api/seed", async (req, res) => {
-    // Clear existing data (optional, but good for fresh start)
-    // await storage.clearAll(); 
-    
+    // Clear existing data if requested
+    if (req.query.clear === "true") {
+      await User.deleteMany({ username: { $ne: "admin" } });
+      await Trip.deleteMany({});
+      await Place.deleteMany({});
+      await Member.deleteMany({});
+      await Expense.deleteMany({});
+      console.log("Database cleared for fresh seeding");
+    }
     // Create Munnar Trip
     const munnar = await storage.createTrip({
       name: "Munnar Tea Gardens",
